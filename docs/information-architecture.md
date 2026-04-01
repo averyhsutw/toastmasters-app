@@ -341,21 +341,26 @@ to meeting data            auto-populates
 
 ## File Structure (Next.js App Router)
 
+> **Note:** Authenticated pages use the `(app)` route group which includes a shared `NavBar` layout.
+> The `/ → /dashboard` redirect lives at `app/page.tsx`. Login is outside the group.
+
 ```
 app/
-├── layout.tsx              # Root layout with nav bar
+├── layout.tsx              # Root layout (fonts, QueryProvider)
+├── page.tsx                # Redirect / → /dashboard
 ├── login/
-│   └── page.tsx            # Login page
-├── dashboard/
-│   └── page.tsx            # Dashboard
-├── meetings/
-│   ├── page.tsx            # Meeting history list
-│   └── current/
-│       ├── page.tsx        # Current meeting role table
-│       └── agenda/
-│           └── page.tsx    # Agenda view
-├── tasks/
-│   └── page.tsx            # My tasks
+│   └── page.tsx            # Login page (Client Component)
+├── (app)/
+│   ├── layout.tsx          # Authenticated layout (NavBar, session check)
+│   ├── dashboard/
+│   │   └── page.tsx        # Dashboard
+│   ├── meetings/
+│   │   └── current/
+│   │       ├── page.tsx    # Current meeting role table
+│   │       └── agenda/
+│   │           └── page.tsx # Agenda view
+│   └── tasks/
+│       └── page.tsx        # My tasks
 └── api/
     ├── auth/
     │   ├── login/route.ts
@@ -365,7 +370,7 @@ app/
     │   ├── route.ts                         # GET list, POST create
     │   ├── current/route.ts                 # GET current meeting
     │   └── [id]/
-    │       ├── route.ts                     # PATCH update meeting
+    │       ├── route.ts                     # GET single meeting
     │       ├── assignments/
     │       │   ├── route.ts                 # GET list, POST create
     │       │   └── [assignmentId]/route.ts  # PATCH update
@@ -376,3 +381,35 @@ app/
         ├── me/route.ts                      # GET my tasks
         └── [id]/route.ts                    # PATCH update task
 ```
+
+---
+
+## Implementation Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Data Models (User, Meeting, Assignment, Task) | ✅ Done | Mongoose schemas + TS types |
+| Auth (login, logout, session, JWT, middleware) | ✅ Done | `jose` JWT, httpOnly cookie |
+| Seed Script | ✅ Done | 8 demo users, `npm run seed` |
+| Role Templates | ✅ Done | 8 role types with task definitions |
+| Login Page | ✅ Done | Client Component, form → POST /api/auth/login → /dashboard |
+| Dashboard | ✅ Done | Session-aware, quick-link cards, Create Meeting form (secretary) |
+| NavBar + App Layout | ✅ Done | `(app)` route group with server-side session check |
+| GET /api/meetings | ✅ Done | List all meetings |
+| GET /api/meetings/current | ✅ Done | Returns latest draft/open meeting |
+| GET /api/meetings/[id] | ✅ Done | Returns single meeting |
+| POST /api/meetings (create) | ✅ Done | Secretary-only, creates draft meeting |
+| PATCH /api/meetings/[id] | ✅ Done | Status transitions: draft→open→finalized |
+| GET /api/meetings/[id]/assignments | ✅ Done | Returns assignments with assignee + tasks |
+| POST /api/meetings/[id]/assignments | ✅ Done | Add role + auto-generate tasks from template |
+| GET /api/members | ✅ Done | List active members (for assignment dropdowns) |
+| Current Meeting page (role table) | ✅ Done | Role table + Add Role form + status buttons + inline Reassign dropdown |
+| React Query hooks | ✅ Done | `useSession`, `useCurrentMeeting`, `useMeetingAssignments`, `useMembers`, `useCreateMeeting`, `useAddAssignment`, `useUpdateMeetingStatus`, `useMyTasks`, `useUpdateTask`, `useReassignAssignment`, `useAgenda`, `useSendAgenda` |
+| GET /api/tasks/me | ✅ Done | Returns user's tasks with meeting/assignment context |
+| PATCH /api/tasks/[id] | ✅ Done | Update task answer + status; syncs confirm→assignment, topic→meeting |
+| Tasks page | ✅ Done | Task cards grouped by meeting; confirm/decline + text input per type |
+| PATCH /api/meetings/[id]/assignments/[assignmentId] | ✅ Done | Reassign role: update assignee, reset confirmation, delete old tasks, regenerate new tasks |
+| GET /api/meetings/[id]/agenda | ✅ Done | Derives agenda from assignments + tasks (topic, WOD, roles, speeches, warnings) |
+| POST /api/meetings/[id]/agenda/send | ✅ Done | Sends agenda email to all active members via Resend |
+| Agenda page | ✅ Done | Agenda card with topic, WOD, role table, prepared speeches, warnings, send button (secretary) |
+| UI Polish | ✅ Done | NavBar active-state fix, View Agenda link on meeting page, user display name, dashboard cleanup |
